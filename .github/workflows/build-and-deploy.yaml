@@ -25,7 +25,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: DevAndOps-Podcast/demochat-app
+          images: ghcr.io/DevAndOps-Podcast/demochat-app
           tags: |
             type=sha,enable=true,format=long,prefix=,suffix=
             type=raw,enable=true,value=latest
