@@ -1,14 +1,30 @@
-# Dockerfile for go application with multi stage build
-# Build stage
-FROM golang:1.13.4-alpine3.10 AS build-env
-RUN apk add --no-cache git
-WORKDIR /go/src/app
-COPY . .
-RUN go get -d -v ./...
-RUN go build -o /go/bin/app
+#build stage
+FROM golang:1.24.6-alpine3.22 AS builder
+RUN apk add --no-cache git upx
 
-# Final stage
-FROM alpine:3.10
 WORKDIR /app
-COPY --from=build-env /go/bin/app /app/
-ENTRYPOINT ./app
+
+COPY ["go.mod", "go.sum", "./"]
+RUN go mod download -x
+
+COPY . .
+
+RUN go build \
+  -ldflags="-s -w" \
+  -o app -v .
+
+RUN upx app
+
+#final stage
+FROM alpine:3.22
+
+RUN apk update
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["./app"]
