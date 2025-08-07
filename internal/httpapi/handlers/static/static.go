@@ -29,6 +29,8 @@ func New() Result {
 
 func (h *handler) RegisterRoutes(e *echo.Echo) {
 	// Create a subdirectory for the embedded content
-	staticContent, _ := fs.Sub(content, "static")
-	e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", http.FileServer(http.FS(staticContent)))))
+	staticContent, _ := fs.Sub(content, "content")
+	assetsHandler := http.FileServer(http.FS(staticContent))
+	e.GET("/", echo.WrapHandler(assetsHandler))
+	e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", assetsHandler)))
 }
