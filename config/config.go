@@ -15,6 +15,15 @@ type Config struct {
 		BaseUrl string `yaml:"base_url"`
 		ApiKey  string `yaml:"api_key"`
 	} `yaml:"insights_service"`
+	DB struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
+		DBName   string `yaml:"dbname"`
+		SSLMode  string `yaml:"sslmode"`
+		Schema   string `yaml:"schema"`
+	} `yaml:"postgres"`
 }
 
 func New() *Config {

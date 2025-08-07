@@ -3,8 +3,8 @@ package messages
 import (
 	"context"
 	"database/sql"
-
-	_ "github.com/mattn/go-sqlite3"
+	"demochat/config"
+	"fmt"
 )
 
 type Message struct {
@@ -20,20 +20,21 @@ type Repository interface {
 }
 
 type repository struct {
-	db *sql.DB
+	db     *sql.DB
+	schema string
 }
 
-func New(db *sql.DB) Repository {
-	return &repository{db: db}
+func New(db *sql.DB, cfg *config.Config) Repository {
+	return &repository{db: db, schema: cfg.DB.Schema}
 }
 
 func (r *repository) CreateMessage(ctx context.Context, message *Message) error {
-	_, err := r.db.ExecContext(ctx, "INSERT INTO messages (user_id, message) VALUES (?, ?)", message.UserID, message.Message)
+	_, err := r.db.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s.messages (user_id, message) VALUES ($1, $2)", r.schema), message.UserID, message.Message)
 	return err
 }
 
 func (r *repository) ListMessages(ctx context.Context) ([]*Message, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT m.id, m.user_id, u.username, m.message FROM messages m INNER JOIN users u ON m.user_id = u.id ORDER BY m.id ASC")
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf("SELECT m.id, m.user_id, u.username, m.message FROM %s.messages m INNER JOIN %s.users u ON m.user_id = u.id ORDER BY m.id ASC", r.schema, r.schema))
 	if err != nil {
 		return nil, err
 	}

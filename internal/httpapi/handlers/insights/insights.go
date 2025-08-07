@@ -45,6 +45,8 @@ func (h *handler) GetInsights(c echo.Context) error {
 	insights := h.insightsService.GetInsights(c.Request().Context())
 	username := ""
 
+	log.Println(insights)
+
 	u, err := h.authService.FindByID(c.Request().Context(), insights.MostActiveUserID)
 	if err != nil {
 		log.Println("failed to load most_active_user username with id:", insights.MostActiveUserID)

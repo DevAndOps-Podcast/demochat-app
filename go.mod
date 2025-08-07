@@ -9,7 +9,7 @@ require (
 	github.com/imroc/req/v3 v3.54.0
 	github.com/labstack/echo-jwt/v4 v4.3.1
 	github.com/labstack/echo/v4 v4.13.3
-	github.com/mattn/go-sqlite3 v1.14.30
+	github.com/lib/pq v1.10.9
 	go.uber.org/fx v1.20.1
 	golang.org/x/crypto v0.39.0
 	gopkg.in/yaml.v2 v2.4.0

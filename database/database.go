@@ -3,46 +3,69 @@ package database
 import (
 	"context"
 	"database/sql"
+	"demochat/config"
+	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
-func New(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./chat.db")
+func New(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.DBName, cfg.DB.SSLMode)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := CreateUsersTable(db); err != nil {
+	if err := db.PingContext(ctx); err != nil {
 		return nil, err
 	}
 
-	if err := CreateMessagesTable(db); err != nil {
+	// Set the schema for the current session
+	_, err = db.ExecContext(ctx, fmt.Sprintf("SET search_path TO %s", cfg.DB.Schema))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := CreateSchema(db, cfg.DB.Schema); err != nil {
+		return nil, err
+	}
+
+	if err := CreateUsersTable(db, cfg.DB.Schema); err != nil {
+		return nil, err
+	}
+
+	if err := CreateMessagesTable(db, cfg.DB.Schema); err != nil {
 		return nil, err
 	}
 
 	return db, nil
 }
 
-func CreateUsersTable(db *sql.DB) error {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			username TEXT NOT NULL UNIQUE,
-			password TEXT NOT NULL
-		);
-	`)
+func CreateSchema(db *sql.DB, schemaName string) error {
+	_, err := db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schemaName))
 	return err
 }
 
-func CreateMessagesTable(db *sql.DB) error {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS messages (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+func CreateUsersTable(db *sql.DB, schemaName string) error {
+	_, err := db.Exec(fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s.users (
+			id SERIAL PRIMARY KEY,
+			username TEXT NOT NULL UNIQUE,
+			password TEXT NOT NULL
+		);
+	`, schemaName))
+	return err
+}
+
+func CreateMessagesTable(db *sql.DB, schemaName string) error {
+	_, err := db.Exec(fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s.messages (
+			id SERIAL PRIMARY KEY,
 			user_id INTEGER NOT NULL,
 			message TEXT NOT NULL,
-			FOREIGN KEY(user_id) REFERENCES users(id)
+			FOREIGN KEY(user_id) REFERENCES %s.users(id)
 		);
-	`)
+	`, schemaName, schemaName))
 	return err
 }

@@ -3,8 +3,8 @@ package users
 import (
 	"context"
 	"database/sql"
-
-	_ "github.com/mattn/go-sqlite3"
+	"demochat/config"
+	"fmt"
 )
 
 type User struct {
@@ -20,17 +20,18 @@ type Repository interface {
 }
 
 type repository struct {
-	db *sql.DB
+	db     *sql.DB
+	schema string
 }
 
-func New(db *sql.DB) Repository {
-	return &repository{db: db}
+func New(db *sql.DB, cfg *config.Config) Repository {
+	return &repository{db: db, schema: cfg.DB.Schema}
 }
 
 func (r *repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var user User
 
-	row := r.db.QueryRowContext(ctx, "SELECT id, username, password FROM users WHERE username = ?", username)
+	row := r.db.QueryRowContext(ctx, fmt.Sprintf("SELECT id, username, password FROM %s.users WHERE username = $1", r.schema), username)
 
 	if err := row.Scan(&user.ID, &user.Username, &user.Password); err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 func (r *repository) FindByID(ctx context.Context, id int64) (*User, error) {
 	var user User
 
-	row := r.db.QueryRowContext(ctx, "SELECT id, username, password FROM users WHERE id = ?", id)
+	row := r.db.QueryRowContext(ctx, fmt.Sprintf("SELECT id, username, password FROM %s.users WHERE id = $1", r.schema), id)
 
 	if err := row.Scan(&user.ID, &user.Username, &user.Password); err != nil {
 		return nil, err
@@ -52,6 +53,6 @@ func (r *repository) FindByID(ctx context.Context, id int64) (*User, error) {
 }
 
 func (r *repository) CreateUser(ctx context.Context, user *User) error {
-	_, err := r.db.ExecContext(ctx, "INSERT INTO users (username, password) VALUES (?, ?)", user.Username, user.Password)
+	_, err := r.db.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s.users (username, password) VALUES ($1, $2)", r.schema), user.Username, user.Password)
 	return err
 }
