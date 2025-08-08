@@ -48,8 +48,6 @@ func (c Client) PublishMessage(ctx context.Context, data PublishMessageRequest) 
 		return resp.Err
 	}
 
-	log.Println("message sent")
-
 	return err
 }
 

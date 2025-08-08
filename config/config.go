@@ -2,7 +2,9 @@ package config
 
 import (
 	"log"
+	"log/slog"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -11,6 +13,7 @@ type Config struct {
 	Address         string `yaml:"address"`
 	JWTSecret       string `yaml:"jwt_secret"`
 	Debug           bool   `yaml:"debug"`
+	LogLevel        string `yaml:"log_level"`
 	InsightsService struct {
 		BaseUrl string `yaml:"base_url"`
 		ApiKey  string `yaml:"api_key"`
@@ -43,4 +46,17 @@ func New() *Config {
 	}
 
 	return cfg
+}
+
+func (c *Config) GetLogLevel() slog.Level {
+	switch strings.ToLower(c.LogLevel) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

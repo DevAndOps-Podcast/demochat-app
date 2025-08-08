@@ -10,7 +10,8 @@ import (
 	"demochat/internal/httpapi/handlers"
 	"demochat/internal/repositories"
 	"demochat/internal/services"
-	"log"
+	"demochat/logger"
+	"log/slog"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -25,6 +26,7 @@ type Params struct {
 	DB       *sql.DB
 	Echo     *echo.Echo
 	Handlers []handlers.Handler `group:"handlers"`
+	Logger   *logger.Logger
 }
 
 func main() {
@@ -32,9 +34,8 @@ func main() {
 		fx.Provide(
 			context.Background,
 			config.New,
-			func(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
-				return database.New(ctx, cfg)
-			},
+			logger.New,
+			database.New,
 			echo.New,
 			insights.New,
 		),
@@ -52,16 +53,16 @@ func main() {
 func setLifeCycle(p Params) {
 	p.Lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			p.Echo.Debug = p.Config.Debug
 			p.Echo.Use(middleware.Recover())
 			p.Echo.Use(middleware.RequestID())
+			p.Echo.Use(middleware.Logger())
 
 			for _, h := range p.Handlers {
 				h.RegisterRoutes(p.Echo)
 			}
 
 			go func() {
-				p.Echo.Logger.Fatal(p.Echo.Start(p.Config.Address))
+				p.Echo.Logger.Error(p.Echo.Start(p.Config.Address))
 			}()
 
 			return nil
@@ -69,11 +70,11 @@ func setLifeCycle(p Params) {
 
 		OnStop: func(ctx context.Context) error {
 			if err := p.Echo.Shutdown(ctx); err != nil {
-				log.Println(err)
+				p.Logger.Error("failed to shutdown echo", slog.Any("error", err))
 			}
 
 			if err := p.DB.Close(); err != nil {
-				log.Println(err)
+				p.Logger.Error("failed to close database connection", slog.Any("error", err))
 			}
 
 			return nil

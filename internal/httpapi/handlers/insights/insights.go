@@ -4,7 +4,7 @@ import (
 	"demochat/internal/httpapi/handlers"
 	"demochat/internal/services/auth"
 	"demochat/internal/services/insights"
-	"log"
+	"demochat/logger"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -42,14 +42,14 @@ type InsightsResponse struct {
 }
 
 func (h *handler) GetInsights(c echo.Context) error {
+	ctx := c.Request().Context()
+	log := logger.FromCtx(ctx)
 	insights := h.insightsService.GetInsights(c.Request().Context())
 	username := ""
 
-	log.Println(insights)
-
-	u, err := h.authService.FindByID(c.Request().Context(), insights.MostActiveUserID)
+	u, err := h.authService.FindByID(ctx, insights.MostActiveUserID)
 	if err != nil {
-		log.Println("failed to load most_active_user username with id:", insights.MostActiveUserID)
+		log.WithError(err).Error("failed to load most_active_user username with id:", insights.MostActiveUserID)
 	} else if u != nil {
 		username = u.Username
 	}
