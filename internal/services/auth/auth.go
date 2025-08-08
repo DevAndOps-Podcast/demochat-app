@@ -78,7 +78,7 @@ func (s *service) RefreshToken(ctx context.Context, token string) (*Authenticati
 	claims := &jwt.MapClaims{}
 
 	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(s.jwtSecret), nil
 	})
 	if err != nil {
 		return nil, err
