@@ -9,6 +9,7 @@ The application can be configured using a `config.yaml` file in the root directo
 ```yaml
 address: ":8081"
 jwt_secret: "supersecretjwtkey"
+log_level: "error"
 debug: true
 insights_service:
   base_url: "http://localhost:8082"
